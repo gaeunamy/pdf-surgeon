@@ -1,0 +1,27 @@
+# Python 캐시 및 컴파일 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경
+venv/
+.venv/
+env/
+ENV/
+
+# 설정 및 환경 변수
+.env
+.vscode/
+.idea/
+
+# 프로젝트 데이터 및 결과물
+data/output/*.pdf
+translated_sample.pdf
+replaced_sample.pdf
+masked_sample.pdf
+
+# *.pdf
+
+# OS 관련 임시 파일
+.DS_Store
+Thumbs.db
