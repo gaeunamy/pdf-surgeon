@@ -17,7 +17,7 @@ if __name__ == "__main__":
     MY_MAP = {
         "INVOICE (청구서)": "세금계산서 (INVOICE) (청구서)",
         "Date": "날짜", 
-        "Account Number": "계좌번호",
+        "Account Number:": "계좌번호", # 콜론 유지하는지 확인
     }
     
     # 엔진 실행

@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 import os
+import re
 
 # --- [1. 공통 설정 및 유틸리티] ---
 FONT_MAP = {
@@ -51,65 +52,79 @@ def get_line_bbox(dict_data, target_text):
 
 # --- [2. 주요 기능 함수] ---
 
-def mask_text(input_path, output_path, target_text, color=(0, 0, 0)):
-    """기능 1: 텍스트 마스킹"""
-    doc = fitz.open(input_path)
-    for page in doc:
-        instances = page.search_for(target_text)
-        for inst in instances:
-            page.add_redact_annot(inst, fill=color)
-        page.apply_redactions()
-    doc.save(output_path)
-    doc.close()
-    print(f"✅ [MASK] '{target_text}' 처리 완료")
-
 def translate_text_smart(input_path, output_path, translation_map):
-    """기능 2: 지능형 레이아웃 번역 (상세 로그 버전)"""
-    print(f"\n🚀 [Smart Engine] 자연스러운 레이아웃 모드 가동")
+    """기능 2: 지능형 레이아웃 번역 (범용 기호 보호 및 의도 파악 적용)"""
+    print(f"\n🚀 [Smart Engine] 범용 기호 보호 및 의도 파악 시스템 가동...")
     doc = fitz.open(input_path)
     page = doc[0]
     dict_data = page.get_text("dict")
     pending_actions = []
 
+    # 보호할 기호 리스트
+    PROTECT_SYMBOLS = [":", ",", ".", "-", ";", "/", "]", ")"]
+
     for old_txt, new_txt in translation_map.items():
-        instances = page.search_for(old_txt)
+        # [의도 파악] 사용자가 원본에 있던 기호를 결과물에서 직접 삭제했는지 확인
+        original_has_symbol = any(old_txt.endswith(s) for s in PROTECT_SYMBOLS)
+        new_has_symbol = any(new_txt.endswith(s) for s in PROTECT_SYMBOLS)
+        
+        # 원본엔 기호가 있는데 결과물엔 없다면 '의도적 삭제'로 간주
+        is_intentional_deletion = original_has_symbol and not new_has_symbol
+
+        # 검색 최적화를 위해 우측 기호 및 공백 제거
+        search_key = old_txt.rstrip(": ,.-[];/)]") 
+        instances = page.search_for(search_key)
         if not instances: continue
 
-        orig_size, orig_color, orig_font_name, is_bold_orig, width_ratio = get_original_style(page, old_txt)
+        orig_size, orig_color, orig_font_name, is_bold_orig, width_ratio = get_original_style(page, search_key)
         matched_font_file = find_local_font_path(orig_font_name)
         
         for inst in instances:
-            old_w = inst.width
-            new_w = get_text_width(new_txt, orig_size, matched_font_file)
-            is_length_changed = abs(new_w - old_w) > 2
-            line_rect, full_line = get_line_bbox(dict_data, old_txt)
+            # 1. [Spatial Grouping] 단어 우측 10px 이내 범용 기호 탐색
+            search_rect = fitz.Rect(inst.x1, inst.y0, inst.x1 + 10, inst.y1)
+            nearby_items = page.get_text("words", clip=search_rect)
+            
+            protected_suffix = ""
+            current_inst = inst
+            for item in nearby_items:
+                symbol = item[4].strip()
+                if symbol in PROTECT_SYMBOLS:
+                    protected_suffix = symbol
+                    # 기호가 발견되면 지우기 영역을 해당 기호까지 확장
+                    current_inst = fitz.Rect(inst.x0, inst.y0, item[2], inst.y1)
+                    break
+            
+            # 2. 줄 재구성 및 교체 로직
+            line_rect, full_line = get_line_bbox(dict_data, search_key)
+            
+            # 의도적으로 지운 게 아니라면 탐지된 기호를 다시 붙여줌
+            final_replacement = new_txt if is_intentional_deletion else new_txt + protected_suffix
 
-            if is_length_changed and line_rect:
-                # 🟧 줄 재구성 로그 출력
-                reconstructed_line = full_line.replace(old_txt, new_txt)
-                print(f"🟧 [LINE RECONSTRUCT] '{full_line.strip()}' ➔ '{reconstructed_line.strip()}'")
-                print(f"    └ 폰트={orig_font_name}, 볼드판정={is_bold_orig},비율={width_ratio:.2f}")
+            if line_rect:
+                parts = full_line.split(search_key, 1)
+                prefix = parts[0]
+                # 이미 protected_suffix를 통해 기호를 처리하므로 원본 suffix에서 해당 기호 제거 시도
+                suffix = parts[1] if len(parts) > 1 else ""
+                if not is_intentional_deletion and protected_suffix and suffix.startswith(protected_suffix):
+                    suffix = suffix[len(protected_suffix):]
+
+                print(f"🟧 [RECONSTRUCT] '{full_line.strip()}' ➔ '{prefix + final_replacement + suffix}'")
                 
-                parts = full_line.split(old_txt, 1)
-                prefix, suffix = parts[0], parts[1] if len(parts) > 1 else ""
                 current_x = line_rect.x0
-
                 if prefix:
                     pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": prefix, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": False})
                     current_x += get_text_width(prefix, orig_size, matched_font_file)
-
-                pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": new_txt, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": True})
-                current_x += get_text_width(new_txt, orig_size, matched_font_file)
+                
+                pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": final_replacement, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": True})
+                current_x += get_text_width(final_replacement, orig_size, matched_font_file)
 
                 if suffix:
                     pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": suffix, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": False})
+                
                 page.add_redact_annot(line_rect, fill=(1, 1, 1))
             else:
-                # 🟦 단순 단어 교체 로그 출력
-                print(f"🟦 [WORD REPLACE] '{old_txt}' ➔ '{new_txt}'")
-                print(f"    └ 폰트={orig_font_name}, 볼드={is_bold_orig}, 비율={width_ratio:.2f}")
-                page.add_redact_annot(inst, fill=(1, 1, 1))
-                pending_actions.append({"point": fitz.Point(inst.x0, inst.y1 - 2), "text": new_txt, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": True})
+                page.add_redact_annot(current_inst, fill=(1, 1, 1))
+                pending_actions.append({"point": fitz.Point(inst.x0, inst.y1 - 2), "text": final_replacement, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": True})
 
     page.apply_redactions()
     for act in pending_actions:
@@ -123,4 +138,4 @@ def translate_text_smart(input_path, output_path, translation_map):
 
     doc.save(output_path, clean=True)
     doc.close()
-    print(f"\n✨ 지능형 번역 완료: {output_path}")
+    print(f"\n✨ 지능형 번역 완료!: {output_path}")
