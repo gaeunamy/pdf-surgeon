@@ -3,14 +3,19 @@ import os
 import re
 
 # --- [1. 공통 설정 및 유틸리티] ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FONTS_DIR = os.path.join(BASE_DIR, "assets", "fonts")
+
 FONT_MAP = {
-    "Malgun": "C:/Windows/Fonts/malgun.ttf",
-    "Gulim": "C:/Windows/Fonts/gulim.ttc",
-    "Dotum": "C:/Windows/Fonts/gulim.ttc",
-    "Batang": "C:/Windows/Fonts/batang.ttc",
-    "Gungsuh": "C:/Windows/Fonts/gungsuh.ttc",
+    "Noto": os.path.join(FONTS_DIR, "NotoSansKR-Regular.ttf"),
+    "Gulim": os.path.join(FONTS_DIR, "Gulim.ttf"),
+    "Dotum": os.path.join(FONTS_DIR, "Dotum.ttf"),
+    "Batang": os.path.join(FONTS_DIR, "Batang.ttf"),
+    "Gungsuh": os.path.join(FONTS_DIR, "Gungsuh.ttf"),
+    "Malgun": os.path.join(FONTS_DIR, "NotoSansKR-Regular.ttf"),
 }
-FALLBACK_REGULAR = "C:/Windows/Fonts/malgun.ttf"
+
+FALLBACK_FONT = os.path.join(FONTS_DIR, "NotoSansKR-Regular.ttf")
 
 def find_local_font_path(pdf_font_name):
     name_lower = pdf_font_name.lower()
@@ -31,15 +36,11 @@ def get_original_style(page, target_text):
                 for span in line["spans"]:
                     if target_text in span["text"]:
                         font_name = span["font"]
-                        is_bold_flag = bool(span["flags"] & 2)
-                        char_count = len(span["text"]) if len(span["text"]) > 0 else 1
-                        avg_char_width = (span["bbox"][2] - span["bbox"][0]) / char_count
-                        width_ratio = avg_char_width / span["size"]
-                        is_bold_logic = is_bold_flag or "bold" in font_name.lower() or width_ratio > 0.5
                         c = span["color"]
                         rgb = (((c >> 16) & 255)/255, ((c >> 8) & 255)/255, (c & 255)/255)
-                        return span["size"], rgb, span["font"], is_bold_logic, width_ratio
-    return 11, (0, 0, 0), "Unknown", False, 0.0
+                        # 볼드체 감지 로직(is_bold_flag, width_ratio 등) 제거
+                        return span["size"], rgb, font_name
+    return 11, (0, 0, 0), "Unknown"
 
 def get_line_bbox(dict_data, target_text):
     for block in dict_data["blocks"]:
@@ -53,7 +54,7 @@ def get_line_bbox(dict_data, target_text):
 # --- [2. 주요 기능 함수] ---
 
 def translate_text_smart(input_path, output_path, translation_map):
-    """기능 2: 지능형 레이아웃 번역 (범용 기호 보호 및 의도 파악 적용)"""
+    """기능 2: 지능형 레이아웃 번역 (범용 기호 보호 및 의도 파악 적용, 볼드체 처리 제거)"""
     print(f"\n🚀 [Smart Engine] 범용 기호 보호 및 의도 파악 시스템 가동...")
     doc = fitz.open(input_path)
     page = doc[0]
@@ -64,23 +65,20 @@ def translate_text_smart(input_path, output_path, translation_map):
     PROTECT_SYMBOLS = [":", ",", ".", "-", ";", "/", "]", ")"]
 
     for old_txt, new_txt in translation_map.items():
-        # [의도 파악] 사용자가 원본에 있던 기호를 결과물에서 직접 삭제했는지 확인
         original_has_symbol = any(old_txt.endswith(s) for s in PROTECT_SYMBOLS)
         new_has_symbol = any(new_txt.endswith(s) for s in PROTECT_SYMBOLS)
         
-        # 원본엔 기호가 있는데 결과물엔 없다면 '의도적 삭제'로 간주
         is_intentional_deletion = original_has_symbol and not new_has_symbol
 
-        # 검색 최적화를 위해 우측 기호 및 공백 제거
         search_key = old_txt.rstrip(": ,.-[];/)]") 
         instances = page.search_for(search_key)
         if not instances: continue
 
-        orig_size, orig_color, orig_font_name, is_bold_orig, width_ratio = get_original_style(page, search_key)
+        # 볼드체 관련 변수 반환받지 않음
+        orig_size, orig_color, orig_font_name = get_original_style(page, search_key)
         matched_font_file = find_local_font_path(orig_font_name)
         
         for inst in instances:
-            # 1. [Spatial Grouping] 단어 우측 10px 이내 범용 기호 탐색
             search_rect = fitz.Rect(inst.x1, inst.y0, inst.x1 + 10, inst.y1)
             nearby_items = page.get_text("words", clip=search_rect)
             
@@ -90,27 +88,19 @@ def translate_text_smart(input_path, output_path, translation_map):
                 symbol = item[4].strip()
                 if symbol in PROTECT_SYMBOLS:
                     protected_suffix = symbol
-                    # 기호가 발견되면 지우기 영역을 해당 기호까지 확장
                     current_inst = fitz.Rect(inst.x0, inst.y0, item[2], inst.y1)
                     break
             
-            # 2. 줄 재구성 및 교체 로직
             line_rect, full_line = get_line_bbox(dict_data, search_key)
             
-            # 의도적으로 지운 게 아니라면 탐지된 기호를 다시 붙여줌
-            if is_intentional_deletion:
+            if protected_suffix and new_txt.endswith(protected_suffix):
                 final_replacement = new_txt
             else:
-                # 번역어(new_txt)가 이미 기호로 끝나고 있다면 suffix를 붙이지 않음
-                if protected_suffix and new_txt.endswith(protected_suffix):
-                    final_replacement = new_txt
-                else:
-                    final_replacement = new_txt + protected_suffix
+                final_replacement = new_txt if is_intentional_deletion else new_txt + protected_suffix
 
             if line_rect:
                 parts = full_line.split(search_key, 1)
                 prefix = parts[0]
-                # 이미 protected_suffix를 통해 기호를 처리하므로 원본 suffix에서 해당 기호 제거 시도
                 suffix = parts[1] if len(parts) > 1 else ""
                 if not is_intentional_deletion and protected_suffix and suffix.startswith(protected_suffix):
                     suffix = suffix[len(protected_suffix):]
@@ -118,29 +108,29 @@ def translate_text_smart(input_path, output_path, translation_map):
                 print(f"🟧 [RECONSTRUCT] '{full_line.strip()}' ➔ '{prefix + final_replacement + suffix}'")
                 
                 current_x = line_rect.x0
+                # pending_actions에서 "is_bold" 키 삭제
                 if prefix:
-                    pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": prefix, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": False})
+                    pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": prefix, "size": orig_size, "color": orig_color, "font_file": matched_font_file})
                     current_x += get_text_width(prefix, orig_size, matched_font_file)
                 
-                pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": final_replacement, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": True})
+                pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": final_replacement, "size": orig_size, "color": orig_color, "font_file": matched_font_file})
                 current_x += get_text_width(final_replacement, orig_size, matched_font_file)
 
                 if suffix:
-                    pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": suffix, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": False})
+                    pending_actions.append({"point": fitz.Point(current_x, inst.y1 - 2), "text": suffix, "size": orig_size, "color": orig_color, "font_file": matched_font_file})
                 
                 page.add_redact_annot(line_rect, fill=(1, 1, 1))
             else:
                 page.add_redact_annot(current_inst, fill=(1, 1, 1))
-                pending_actions.append({"point": fitz.Point(inst.x0, inst.y1 - 2), "text": final_replacement, "size": orig_size, "color": orig_color, "font_file": matched_font_file, "is_bold": True})
+                pending_actions.append({"point": fitz.Point(inst.x0, inst.y1 - 2), "text": final_replacement, "size": orig_size, "color": orig_color, "font_file": matched_font_file})
 
     page.apply_redactions()
     for act in pending_actions:
+        # render_mode와 border_width 옵션 제거 (기본값인 일반 굵기로 렌더링됨)
         page.insert_text(
             act["point"], act["text"], 
             fontname="ko", fontfile=act["font_file"], 
-            fontsize=act["size"], color=act["color"], 
-            render_mode=2 if act["is_bold"] else 0, 
-            border_width=0.02 if act["is_bold"] else 0
+            fontsize=act["size"], color=act["color"]
         )
 
     doc.save(output_path, clean=True)
