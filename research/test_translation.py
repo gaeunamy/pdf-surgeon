@@ -1,12 +1,13 @@
 import sys
 import os
+import fitz
 
 # 프로젝트 루트 경로를 찾아서 src 폴더를 불러올 수 있게 설정
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 sys.path.append(project_root)
 
-from src.engine import translate_text_smart
+from src.engine import translate_text_manual
 
 if __name__ == "__main__":
     # 경로 설정
@@ -21,4 +22,4 @@ if __name__ == "__main__":
     }
     
     # 엔진 실행
-    translate_text_smart(INPUT_PDF, OUTPUT_PDF, MY_MAP)
+    translate_text_manual(INPUT_PDF, OUTPUT_PDF, MY_MAP)

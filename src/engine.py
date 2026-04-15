@@ -62,8 +62,73 @@ def mask_text(input_path, output_path, target_text, color=(0, 0, 0)):
     doc.close()
     print(f"\n{'-'*50}\n🛡️ [작업 완료] 텍스트 마스킹 (타겟: {target_text})\n📁 저장 경로: {output_path}\n{'-'*50}")
 
+def translate_text_manual(input_path, output_path, translation_map):
+    """기능 2: 수동 번역 (부분 일치 지원)
+    사용자가 입력한 키워드가 포함되어 있으면 해당 부분만 교체
+    """
+    doc = fitz.open(input_path)
+    
+    for page in doc:
+        pending_actions = []
+        text_dict = page.get_text("dict")
+        
+        for block in text_dict.get("blocks", []):
+            if "lines" not in block:
+                continue
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    original_text = span["text"]
+                    
+                    # 번역 맵의 키워드가 텍스트 안에 포함되어 있는지 검사
+                    matched_keys = [k for k in translation_map.keys() if k in original_text]
+                    
+                    if matched_keys:
+                        new_text = original_text
+                        # 포함된 모든 키워드를 순차적으로 치환
+                        for k in matched_keys:
+                            new_text = new_text.replace(k, translation_map[k])
+                            
+                        orig_size = span["size"] 
+                        orig_origin = fitz.Point(span["origin"]) 
+                        orig_bbox = fitz.Rect(span["bbox"]) 
+                        
+                        orig_font_name = span["font"]
+                        matched_font_file = find_local_font_path(orig_font_name)
+                        
+                        c = span["color"]
+                        orig_color = ((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255
+                        
+                        page.add_redact_annot(orig_bbox, fill=(1, 1, 1))
+                        
+                        pending_actions.append({
+                            "point": orig_origin,
+                            "text": new_text,
+                            "size": orig_size, 
+                            "color": orig_color,
+                            "font_file": matched_font_file,
+                            "font_name": f"f_ko_{len(pending_actions)}" 
+                        })
+
+        page.apply_redactions()
+        
+        for act in pending_actions:
+            insert_text_with_spacing(
+                page=page,
+                point=act["point"],
+                text=act["text"],
+                fontname=act["font_name"],
+                fontfile=act["font_file"],
+                fontsize=act["size"],
+                color=act["color"]
+            )
+
+    doc.save(output_path, clean=True)
+    doc.close()
+    print(f"\n{'-'*50}\n🛠️ [작업 완료] 수동 부분 번역\n📁 저장 경로: {output_path}\n{'-'*50}")
+
 def translate_text_smart(input_path, output_path, translation_map):
-    """PDF의 텍스트를 찾아 폰트 크기/글씨체/위치를 유지한 채 번역된 텍스트로 교체"""
+    """기능3: 지능형 번역
+    PDF의 텍스트를 찾아 폰트 크기/글씨체/위치를 유지한 채 번역된 텍스트로 교체"""
     doc = fitz.open(input_path)
     
     for page in doc:
