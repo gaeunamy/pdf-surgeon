@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sora: "Sora", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+body {
+  font-family: var(--font-sora);
+  background-color: #F5F0E8;
+  color: #2E3640;
+  min-height: 100vh;
+}
+
+/* 배경 그리드 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(46, 54, 64, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 54, 64, 0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
