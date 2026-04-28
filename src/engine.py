@@ -59,9 +59,14 @@ def extract_english_spans(doc):
 
 def create_masked_pdf(pdf_bytes, target_text="Apple", color=(0, 0, 0)):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    
+    targets = [text.strip() for text in target_text.split(",") if text.strip()]
+    
     for page in doc:
-        for inst in page.search_for(target_text):
-            page.draw_rect(inst, color=color, fill=color)
+        for target in targets:
+            for inst in page.search_for(target):
+                page.draw_rect(inst, color=color, fill=color)
+                
     res = doc.write()
     doc.close()
     return res
