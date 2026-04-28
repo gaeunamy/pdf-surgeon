@@ -1,4 +1,6 @@
-# Python 캐시 및 컴파일 파일
+# =========================
+# Python / FastAPI 관련
+# =========================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,6 +13,7 @@ ENV/
 
 # 설정 및 환경 변수
 .env
+.env*.local
 .vscode/
 .idea/
 
@@ -19,9 +22,32 @@ data/output/*.pdf
 translated_sample.pdf
 replaced_sample.pdf
 masked_sample.pdf
-
 # *.pdf
 
+# =========================
+# Node.js / Next.js 관련
+# =========================
+# dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+.next/
+out/
+build/
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
 # OS 관련 임시 파일
+# =========================
 .DS_Store
 Thumbs.db
