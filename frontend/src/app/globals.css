@@ -14,7 +14,6 @@ body {
   min-height: 100vh;
 }
 
-/* 배경 그리드 */
 body::before {
   content: "";
   position: fixed;
