@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import type { Mode, ReplaceEntry, ProcessState } from "@/types";
+import type { Mode, ReplaceEntry, ProcessState } from "../types";
 
 const uid = () => Math.random().toString(36).slice(2, 8);
 
