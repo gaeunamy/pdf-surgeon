@@ -107,7 +107,8 @@ def _core_translation_engine(pdf_bytes, translation_map, mode="smart"):
                 for span in line["spans"]:
                     raw_text = span["text"]
                     if not raw_text.strip(): continue
-                    if has_korean(raw_text) and not re.search(r'[a-zA-Z]', raw_text): continue
+                    if mode == "smart" and has_korean(raw_text) and not re.search(r'[a-zA-Z]', raw_text): 
+                        continue
 
                     final_text = None
                     if mode == "smart":
