@@ -62,6 +62,7 @@ export default function PdfSurgeon() {
   const [replaceEntries, setReplaceEntries] = useState<ReplaceEntry[]>([]);
   const [ps, setPs] = useState<ProcessState>({ status: "idle", resultBlob: null, errorMessage: "" });
   const [resultName, setResultName] = useState("");
+  const [isHowToOpen, setIsHowToOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
@@ -165,7 +166,12 @@ export default function PdfSurgeon() {
           <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#E24B4A]/10 text-[#E24B4A] border border-[#E24B4A]/20">beta</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] px-3 py-1.5 rounded-lg border border-[#2E3640]/15 text-[#4A5260] cursor-pointer hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors">사용법</span>
+          <button 
+            onClick={() => setIsHowToOpen(true)}
+            className="font-mono text-[11px] px-3 py-1.5 rounded-lg border border-[#2E3640]/15 text-[#4A5260] cursor-pointer hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors"
+          >
+            사용법
+          </button>
           <a 
             href="https://pdf-surgeon-backend.onrender.com/docs" 
             target="_blank" 
@@ -394,6 +400,52 @@ export default function PdfSurgeon() {
         <span className="font-mono text-[10px] text-[#2E3640]/20">pdf-surgeon</span>
         <span className="font-mono text-[10px] text-[#2E3640]/20">FastAPI + Next.js</span>
       </footer>
+
+      {isHowToOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2E3640]/30 backdrop-blur-sm">
+          <div className="bg-[#F5F0E8] border border-[#2E3640]/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2E3640]/10 bg-white/60">
+              <h3 className="font-mono text-[14px] font-medium text-[#2E3640]">사용법 가이드</h3>
+              <button onClick={() => setIsHowToOpen(false)} className="text-[#888] hover:text-[#2E3640] transition-colors">
+                <IconX />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-5 text-[13px] text-[#4A5260] bg-white/40">
+              <div>
+                <h4 className="font-medium text-[#2E3640] mb-1 flex items-center gap-1.5"><span className="text-[#E24B4A]">■</span> 마스킹</h4>
+                <p>이름, 주민번호 등 유출되면 안 되는 개인정보를 입력하면 검은색으로 안전하게 가려줍니다.</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-[#2E3640] mb-1 flex items-center gap-1.5"><span className="text-[#E24B4A]">↔</span> 수동 번역</h4>
+                <p>사내 전문 용어나 고유 명사 등 내가 원하는 단어만 콕 집어서 정확한 단어로 일괄 교체합니다.</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-[#2E3640] mb-1 flex items-center gap-1.5"><span className="text-[#E24B4A]">◈</span> 지능 번역</h4>
+                <p>원본 PDF의 디자인과 서식을 최대한 유지하면서 내용만 한국어로 자연스럽게 번역해 줍니다.</p>
+              </div>
+              
+              <div className="mt-1 p-3.5 rounded-xl bg-[#FCEBEB]/60 border border-[#E24B4A]/15 text-[12px]">
+                <span className="font-medium text-[#E24B4A] flex items-center gap-1 mb-1">
+                  💡 알아두면 좋은 팁
+                </span>
+                <ul className="list-disc list-inside space-y-1 text-[#A32D2D]/80 ml-1">
+                  <li>무료 서버를 사용하여 첫 처리 시 <span className="font-bold underline underline-offset-2">약 1~2분 정도</span> 소요될 수 있습니다.</li>
+                  <li>최대 50MB 이하의 PDF 파일만 지원합니다.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-[#2E3640]/10 bg-white/60 flex justify-end">
+              <button onClick={() => setIsHowToOpen(false)} className="px-5 py-2 bg-[#1C1C1C] text-white rounded-lg text-[13px] font-medium hover:opacity-80 transition-opacity">
+                확인했습니다
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }
