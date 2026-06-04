@@ -121,7 +121,7 @@ export default function PdfSurgeon() {
     }
 
     try {
-      const res = await fetch("/api/translate", { method: "POST", body: fd });
+      const res = await fetch("https://pdf-surgeon-backend.onrender.com/translate/", { method: "POST", body: fd });
       if (!res.ok) {
         const json = await res.json().catch(() => ({ detail: "서버 오류" }));
         setPs({ status: "error", resultBlob: null, errorMessage: json.detail });
