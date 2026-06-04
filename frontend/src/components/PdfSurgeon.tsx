@@ -285,27 +285,31 @@ export default function PdfSurgeon() {
             {mode === "manual" && (
               <div className="flex flex-col gap-3">
                 <p className="text-[13px] text-[#4A5260]">원본 단어와 바꿀 단어를 쌍으로 입력하세요.</p>
-                <div className="flex items-center gap-2">
-                  <input value={replaceFrom} onChange={e => setReplaceFrom(e.target.value)}
-                    placeholder="원본 단어" className={inputCls} />
-                  <span className="text-[#888] flex-shrink-0"><IconArrow /></span>
-                  <input value={replaceTo} onChange={e => setReplaceTo(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addReplaceEntry()}
-                    placeholder="바꿀 단어" className={inputCls} />
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  <div className="flex items-center gap-2 w-full sm:flex-1">
+                    <input value={replaceFrom} onChange={e => setReplaceFrom(e.target.value)}
+                      placeholder="원본 단어" className={`${inputCls} min-w-0`} />
+                    <span className="text-[#888] flex-shrink-0"><IconArrow /></span>
+                    <input value={replaceTo} onChange={e => setReplaceTo(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && addReplaceEntry()}
+                      placeholder="바꿀 단어" className={`${inputCls} min-w-0`} />
+                  </div>
+
                   <button onClick={addReplaceEntry}
-                    className="h-9 px-4 font-mono text-[12px] rounded-lg border border-[#2E3640]/15 text-[#4A5260] hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors flex-shrink-0">
+                    className="w-full sm:w-auto h-9 px-4 font-mono text-[12px] rounded-lg border border-[#2E3640]/15 text-[#4A5260] hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors flex-shrink-0">
                     + 추가
                   </button>
                 </div>
+
                 {replaceEntries.length > 0 && (
-                  <div className="flex flex-col gap-1.5 mt-1">
+                  <div className="flex flex-col gap-1.5 mt-1 w-full">
                     {replaceEntries.map(e => (
-                      <div key={e.id} className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#F5F0E8]/60 border border-[#2E3640]/08">
-                        <span className="font-mono text-[12px] text-[#2E3640] flex-1">{e.from}</span>
-                        <span className="text-[#888]"><IconArrow /></span>
-                        <span className="font-mono text-[12px] text-[#2E3640] flex-1">{e.to}</span>
+                      <div key={e.id} className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#F5F0E8]/60 border border-[#2E3640]/08 w-full">
+                        <span className="font-mono text-[12px] text-[#2E3640] flex-1 truncate min-w-0">{e.from}</span>
+                        <span className="text-[#888] flex-shrink-0"><IconArrow /></span>
+                        <span className="font-mono text-[12px] text-[#2E3640] flex-1 truncate min-w-0">{e.to}</span>
                         <button onClick={() => setReplaceEntries(p => p.filter(x => x.id !== e.id))}
-                          className="text-[#888] hover:text-[#2E3640] transition-colors"><IconX /></button>
+                          className="text-[#888] hover:text-[#2E3640] transition-colors flex-shrink-0"><IconX /></button>
                       </div>
                     ))}
                   </div>
