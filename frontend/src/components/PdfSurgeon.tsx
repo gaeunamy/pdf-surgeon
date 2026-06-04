@@ -275,7 +275,7 @@ export default function PdfSurgeon() {
                 <div className="flex gap-2">
                   <input value={maskInput} onChange={e => setMaskInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && addMaskTag()}
-                    placeholder="예: 홍길동, 주민등록번호, 계좌번호" className={inputCls} />
+                    placeholder="예: 이름, 주민등록번호 등" className={inputCls} />
                   <button onClick={addMaskTag}
                     className="h-9 px-4 font-mono text-[12px] rounded-lg border border-[#2E3640]/15 text-[#4A5260] hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors flex-shrink-0">
                     + 추가
@@ -415,7 +415,7 @@ export default function PdfSurgeon() {
             <div className="p-6 flex flex-col gap-5 text-[13px] text-[#4A5260] bg-white/40">
               <div>
                 <h4 className="font-medium text-[#2E3640] mb-1 flex items-center gap-1.5"><span className="text-[#E24B4A]">■</span> 마스킹</h4>
-                <p>이름, 주민번호 등 유출되면 안 되는 개인정보를 입력하면 검은색으로 안전하게 가려줍니다.</p>
+                <p>이름, 주민등록번호 등 유출되면 안 되는 개인정보를 입력하면 검은색으로 안전하게 가려줍니다.</p>
               </div>
               <div>
                 <h4 className="font-medium text-[#2E3640] mb-1 flex items-center gap-1.5"><span className="text-[#E24B4A]">↔</span> 수동 번역</h4>
