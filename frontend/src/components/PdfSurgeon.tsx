@@ -166,7 +166,14 @@ export default function PdfSurgeon() {
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-[11px] px-3 py-1.5 rounded-lg border border-[#2E3640]/15 text-[#4A5260] cursor-pointer hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors">사용법</span>
-          <span className="font-mono text-[11px] px-3 py-1.5 rounded-lg border border-[#2E3640]/15 text-[#4A5260] cursor-pointer hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors">API 문서</span>
+          <a 
+            href="https://pdf-surgeon-backend.onrender.com/docs" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="font-mono text-[11px] px-3 py-1.5 rounded-lg border border-[#2E3640]/15 text-[#4A5260] cursor-pointer hover:border-[#2E3640]/30 hover:text-[#2E3640] transition-colors"
+          >
+            API 문서
+          </a>
         </div>
       </header>
 
