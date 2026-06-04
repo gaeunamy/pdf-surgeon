@@ -31,14 +31,20 @@ def find_local_font_path(pdf_font_name):
 def insert_text_with_spacing(page, point, text, fontname, fontfile, fontsize, color):
     current_x, current_y = point.x, point.y
     try:
-        font = fitz.Font(fontfile=fontfile) if fontfile else fitz.Font("cjk")
-    except:
+        if fontfile and os.path.exists(fontfile):
+            page.insert_font(fontname=fontname, fontfile=fontfile)
+            font = fitz.Font(fontfile=fontfile)
+        else:
+            font = fitz.Font("cjk")
+            fontname = "cjk"
+    except Exception as e:
+        print(f"⚠️ [Font Error] {e}")
         font = fitz.Font("cjk")
-        fontfile, fontname = None, "cjk"
+        fontname = "cjk"
     
     for char in text:
         page.insert_text(fitz.Point(current_x, current_y), char, 
-                         fontname=fontname, fontfile=fontfile, fontsize=fontsize, color=color)
+                         fontname=fontname, fontsize=fontsize, color=color)
         current_x += font.text_length(char, fontsize=fontsize) + LETTER_SPACING
 
 def extract_english_spans(doc):
