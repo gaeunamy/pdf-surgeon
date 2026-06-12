@@ -17,7 +17,7 @@ def extract_texts_for_translation(pdf_path):
                     for span in line["spans"]:
                         text = span["text"].strip()
                         # 알파벳이 포함되어 있고, 길이가 2 이상인 의미있는 텍스트만 추출
-                        if len(text) > 1 and any(c.isalpha() for c in text):
+                        if len(text) > 1 and (any(c.isalpha() for c in text) or any(c.isdigit() for c in text)):
                             extracted_texts.add(text)
     doc.close()
     return list(extracted_texts)
